@@ -6,9 +6,9 @@ class tuSimpleDataset(data.Dataset):
     # refer from : 
     # https://github.com/vxy10/ImageAugmentation
     # https://github.com/TuSimple/tusimple-benchmark/blob/master/example/lane_demo.ipynb
-    def __init__(self, file_path, size=[640, 360], gray=False, flip=False, rotate=False, bright=False):
+    def __init__(self, file_path, size=[640, 360], gray=True, trans=True, intensity=10):
         self.file_path = file_path
-        self.flags = {'size':size, 'gray':gray, 'flip':flip, 'rotate':rotate}
+        self.flags = {'size':size, 'gray':gray, 'transform':trans, 'intensity':intensity}
         self.json_lists = glob.glob(os.path.join(self.file_path, '*.json'))
         self.labels = []
         for json_list in self.json_lists:
@@ -20,6 +20,7 @@ class tuSimpleDataset(data.Dataset):
         self.label_img = np.zeros(size, np.uint8)
         
         self.len = len(self.labels)
+        
         
     def warp_affine(self, M):
         self.img = cv2.warpAffine(self.img, M, tuple(self.flags['size']))
@@ -50,7 +51,8 @@ class tuSimpleDataset(data.Dataset):
         Shear_M = cv2.getAffineTransform(pts1, pts2)
         self.warp_affine(Shear_M)
         
-    def random_transform(self, intensity=10):
+    def random_transform(self):
+        intensity=self.flags['intensity']
         def _get_delta(intensity):
             delta = np.radians(intensity)
             rand_delta = np.random.uniform(low=-delta, high=delta)
@@ -67,7 +69,6 @@ class tuSimpleDataset(data.Dataset):
     
     def preprocess(self):
         # CLAHE nomalization
-	self.image_resize()
         img = cv2.cvtColor(self.img, cv2.COLOR_RGB2LAB)
         img_plane = cv2.split(img)
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
@@ -88,15 +89,16 @@ class tuSimpleDataset(data.Dataset):
 
     def __getitem__(self, idx):
         self.get_lane_image(idx)
+        self.image_resize()
         self.preprocess()
-        #self.random_brightness()
-        #self.random_rotate()
-        #self.random_translate()
-        #self.random_shear()
+#         self.random_brightness()
+#         self.random_rotate()
+#         self.random_translate()
+#         self.random_shear()
 
-        self.random_transform(intensity=10)
+        self.random_transform()
         
         return self.img, self.label_img
     
     def __len__(self):
-        return self.len 
+        return self.len

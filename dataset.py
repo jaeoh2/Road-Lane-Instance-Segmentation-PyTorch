@@ -2,6 +2,7 @@ import torch
 from torch.utils import data
 from skimage.transform import AffineTransform, warp
 import numpy as np
+import matplotlib.pyplot as plt
 import cv2
 import json
 import glob
@@ -86,7 +87,7 @@ class tuSimpleDataset(data.Dataset):
     def get_lane_image(self, idx):
         lane_pts = [[(x,y) for (x,y) in zip(lane, self.y_samples[idx]) if x >= 0] for lane in self.lanes[idx]]
         self.img = plt.imread(os.path.join(self.file_path, self.raw_files[idx]))
-        self.label_img = np.zeros_like(img)
+        self.label_img = np.zeros_like(self.img)
         
         for lane_pt in lane_pts:
             cv2.polylines(self.label_img, np.int32([lane_pt]), isClosed=False, color=(255,255,255), thickness=15)   
@@ -104,8 +105,9 @@ class tuSimpleDataset(data.Dataset):
 #         self.random_shear()
 
         self.random_transform()
-        
-        return self.img, self.label_img
+        self.img = np.array(np.transpose(self.img, (2,0,1)), dtype=np.float32)
+        self.label_img = np.array(self.label_img, dtype=np.uint8)
+        return torch.FloatTensor(self.img), torch.LongTensor(self.label_img)
     
     def __len__(self):
         return self.len

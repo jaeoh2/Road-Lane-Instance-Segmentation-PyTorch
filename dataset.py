@@ -1,6 +1,7 @@
 import torch
 from torch.utils import data
 from skimage.transform import AffineTransform, warp
+from skimage import img_as_float64
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
@@ -14,9 +15,9 @@ class tuSimpleDataset(data.Dataset):
     # refer from : 
     # https://github.com/vxy10/ImageAugmentation
     # https://github.com/TuSimple/tusimple-benchmark/blob/master/example/lane_demo.ipynb
-    def __init__(self, file_path, size=[640, 360], gray=True, trans=True, intensity=10):
+    def __init__(self, file_path, size=[640, 360], gray=True, train=True, intensity=10):
         self.file_path = file_path
-        self.flags = {'size':size, 'gray':gray, 'transform':trans, 'intensity':intensity}
+        self.flags = {'size':size, 'gray':gray, 'train':train, 'intensity':intensity}
         self.json_lists = glob.glob(os.path.join(self.file_path, '*.json'))
         self.labels = []
         for json_list in self.json_lists:
@@ -65,6 +66,7 @@ class tuSimpleDataset(data.Dataset):
             delta = np.radians(intensity)
             rand_delta = np.random.uniform(low=-delta, high=delta)
             return rand_delta
+
         trans_M = AffineTransform(scale=(.9, .9),
                                  translation=(-_get_delta(intensity), _get_delta(intensity)),
                                  shear=_get_delta(intensity))
@@ -104,10 +106,15 @@ class tuSimpleDataset(data.Dataset):
 #         self.random_translate()
 #         self.random_shear()
 
-        self.random_transform()
-        self.img = np.array(np.transpose(self.img, (2,0,1)), dtype=np.float32)
-        self.label_img = np.array(self.label_img, dtype=np.uint8)
-        return torch.FloatTensor(self.img), torch.LongTensor(self.label_img)
+        if self.flags['train']:
+            self.random_transform()
+            self.img = np.array(np.transpose(self.img, (2,0,1)), dtype=np.float32)
+            self.label_img = np.array(self.label_img, dtype=np.uint8)
+            return torch.FloatTensor(self.img), torch.LongTensor(self.label_img)
+        else:
+            self.img = img_as_float64(self.img)
+            self.img = np.array(np.transpose(self.img, (2,0,1)), dtype=np.float32)
+            return torch.FloatTensor(self.img)
     
     def __len__(self):
         return self.len

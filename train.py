@@ -4,7 +4,7 @@ import time
 import os
 import argparse
 
-from model import BinSegNet
+from model import SegNet
 from dataset import tuSimpleDataset
 from torch.utils.data import DataLoader
 from logger import Logger
@@ -102,7 +102,7 @@ if __name__ == "__main__":
    
    train_dataloader = DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8)
 
-   model = BinSegNet(input_ch=INPUT_CHANNELS, output_ch=OUTPUT_CHANNELS).cuda() 
+   model = SegNet(input_ch=INPUT_CHANNELS, output_ch=OUTPUT_CHANNELS).cuda() 
    if os.path.isfile("model_best.pth"):
        model.load_state_dict(torch.load("model_best.pth"))
    criterion = torch.nn.CrossEntropyLoss().cuda()

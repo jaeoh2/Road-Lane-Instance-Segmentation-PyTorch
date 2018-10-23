@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class BinSegNet(nn.Module):
+class SegNet(nn.Module):
     # refer from : https://github.com/delta-onera/segnet_pytorch/blob/master/segnet.py
     def __init__(self, input_ch, output_ch):
-        super(BinSegNet, self).__init__()
+        super(SegNet, self).__init__()
         # Encoder
         self.conv11 = nn.Conv2d(in_channels=input_ch, out_channels=64, kernel_size=3, padding=1)
         self.bn11 = nn.BatchNorm2d(64)

@@ -1,7 +1,7 @@
 import torch
 from torch.utils import data
 from skimage.transform import AffineTransform, warp
-from skimage import img_as_float64, img_as_ubyte
+from skimage import img_as_float64, img_as_float32, img_as_ubyte
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
@@ -18,6 +18,7 @@ class tuSimpleDataset(data.Dataset):
     def __init__(self, file_path, size=[640, 360], gray=True, train=True, intensity=10):
         self.width = size[0]
         self.height = size[1]
+        self.n_seg = 5
         self.file_path = file_path
         self.flags = {'size':size, 'gray':gray, 'train':train, 'intensity':intensity}
         self.json_lists = glob.glob(os.path.join(self.file_path, '*.json'))
@@ -73,6 +74,9 @@ class tuSimpleDataset(data.Dataset):
    
     def get_lane_image(self, idx):
         lane_pts = [[(x,y) for (x,y) in zip(lane, self.y_samples[idx]) if x >= 0] for lane in self.lanes[idx]]
+        n_lane = len(lane_pts
+        while len(lane_pts) < n_seg:
+            lane_pts.append(list())
         self.img = plt.imread(os.path.join(self.file_path, self.raw_files[idx]))
         self.height, self.width, _ = self.img.shape
         self.label_img = np.zeros((self.height, self.width), dtype=np.uint8)
@@ -92,9 +96,9 @@ class tuSimpleDataset(data.Dataset):
         if self.flags['train']:
             self.random_transform()
             self.img = np.array(np.transpose(self.img, (2,0,1)), dtype=np.float32)
-            self.label_img = img_as_ubyte(self.label_img)
+            self.label_img = img_as_float32(self.label_img)
             self.ins_img = img_as_ubyte(self.ins_img)
-            return torch.Tensor(self.img), torch.Tensor(self.label_img), torch.Tensor(self.ins_img)
+            return torch.Tensor(self.img), torch.LongTensor(self.label_img), torch.Tensor(self.ins_img)
         else:
             self.img = np.array(np.transpose(img_as_float64(self.img), (2,0,1)), dtype=np.float32)
             return torch.Tensor(self.img)

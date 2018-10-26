@@ -39,43 +39,57 @@ def train():
         loss_f = 0
         
         for batch_idx, (imgs, labels) in enumerate(train_dataloader):
-            
+            loss = 0
 
-            input_tensor = torch.autograd.Variable(imgs).cuda()
-            target_tensor = torch.autograd.Variable(labels).cuda()
-            
-            softmaxed_tensor = model(input_tensor)
-            
+            img_tensor = torch.autograd.Variable(imgs).cuda()
+            sem_tensor = torch.autograd.Variable(sem_labels).cuda()
+            ins_tensor = torch.autograd.Variable(ins_labels).cuda()
+
+            # Init gradients
             optimizer.zero_grad()
-            loss = criterion(softmaxed_tensor, target_tensor)
+
+            # Predictions
+            sem_pred, ins_pred = model(img_tensor)
+
+            # Discriminative Loss
+            # lane_idx = int(n_lane[0])
+            # disc_loss = criterion_disc(ins_pred[:, :lane_idx, :, :],
+            #                            ins_tensor[:, :lane_idx, :, :],
+            #                            [lane_idx-1] * len(img_tensor))
+            disc_loss = criterion_disc(ins_pred, ins_tensor, [5] * len(img_tensor))
+
+            loss += disc_loss
+
+            # CrossEntropy Loss
+            ce_loss = criterion_ce(sem_pred.permute(0,2,3,1).contiguous().view(-1,2),
+                                   sem_tensor.view(-1))
+            loss += ce_loss
+
             loss.backward()
             optimizer.step()
-            
-            loss_f += loss.float()
-            prediction_f = softmaxed_tensor.float()
-            
+
             if batch_idx % LOG_INTERVAL == 0:
                 print('\tTrain Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                     epoch, batch_idx * len(imgs), len(train_dataloader.dataset),
                     100. * batch_idx / len(train_dataloader), loss.item()))
 
-                #Tensorboard
-                info = {'loss': loss.item()}
+                ##Tensorboard
+                #info = {'loss': loss.item()}
 
-                for tag, value in info.items():
-                    logger.scalar_summary(tag, value, batch_idx + 1)
+                #for tag, value in info.items():
+                #    logger.scalar_summary(tag, value, batch_idx + 1)
 
-                # 2. Log values and gradients of the parameters (histogram summary)
-                for tag, value in model.named_parameters():
-                    tag = tag.replace('.', '/')
-                    logger.histo_summary(tag, value.data.cpu().numpy(), batch_idx + 1)
-                    logger.histo_summary(tag + '/grad', value.grad.data.cpu().numpy(), batch_idx + 1)
+                ## 2. Log values and gradients of the parameters (histogram summary)
+                #for tag, value in model.named_parameters():
+                #    tag = tag.replace('.', '/')
+                #    logger.histo_summary(tag, value.data.cpu().numpy(), batch_idx + 1)
+                #    logger.histo_summary(tag + '/grad', value.grad.data.cpu().numpy(), batch_idx + 1)
 
-                # 3. Log training images (image summary)
-                info = {'images': input_tensor.view(-1, 224, 224)[:10].cpu().numpy(), 'labels':target_tensor.view(-1, 224, 224)[:10].cpu().numpy()}
+                ## 3. Log training images (image summary)
+                #info = {'images': input_tensor.view(-1, 224, 224)[:10].cpu().numpy(), 'labels':target_tensor.view(-1, 224, 224)[:10].cpu().numpy()}
 
-                for tag, images in info.items():
-                    logger.image_summary(tag, images, batch_idx + 1)
+                #for tag, images in info.items():
+                #    logger.image_summary(tag, images, batch_idx + 1)
             
         dt = time.time() - t_start
         is_better = loss_f < prev_loss

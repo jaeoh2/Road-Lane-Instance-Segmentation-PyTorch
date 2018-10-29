@@ -5,8 +5,8 @@ import os
 import argparse
 
 from model import SegNet
+from loss import DiscriminativeLoss
 from dataset import tuSimpleDataset
-from torch.utils.data import DataLoader
 from logger import Logger
 
 parser = argparse.ArgumentParser(description="Train model")
@@ -37,8 +37,8 @@ def train():
     for epoch in range(NUM_EPOCHS):
         t_start = time.time()
         loss_f = 0
-        
-        for batch_idx, (imgs, labels) in enumerate(train_dataloader):
+
+        for batch_idx, (imgs, sem_labels, ins_labels) in enumerate(train_dataloader):
             loss = 0
 
             img_tensor = torch.autograd.Variable(imgs).cuda()
@@ -52,12 +52,7 @@ def train():
             sem_pred, ins_pred = model(img_tensor)
 
             # Discriminative Loss
-            # lane_idx = int(n_lane[0])
-            # disc_loss = criterion_disc(ins_pred[:, :lane_idx, :, :],
-            #                            ins_tensor[:, :lane_idx, :, :],
-            #                            [lane_idx-1] * len(img_tensor))
             disc_loss = criterion_disc(ins_pred, ins_tensor, [5] * len(img_tensor))
-
             loss += disc_loss
 
             # CrossEntropy Loss
@@ -68,28 +63,32 @@ def train():
             loss.backward()
             optimizer.step()
 
+            loss_f += loss.float()
+
             if batch_idx % LOG_INTERVAL == 0:
                 print('\tTrain Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                     epoch, batch_idx * len(imgs), len(train_dataloader.dataset),
                     100. * batch_idx / len(train_dataloader), loss.item()))
 
-                ##Tensorboard
-                #info = {'loss': loss.item()}
+                #Tensorboard
+                info = {'loss': loss.item()}
 
-                #for tag, value in info.items():
-                #    logger.scalar_summary(tag, value, batch_idx + 1)
+                for tag, value in info.items():
+                    logger.scalar_summary(tag, value, batch_idx + 1)
 
-                ## 2. Log values and gradients of the parameters (histogram summary)
-                #for tag, value in model.named_parameters():
-                #    tag = tag.replace('.', '/')
-                #    logger.histo_summary(tag, value.data.cpu().numpy(), batch_idx + 1)
-                #    logger.histo_summary(tag + '/grad', value.grad.data.cpu().numpy(), batch_idx + 1)
+                # 2. Log values and gradients of the parameters (histogram summary)
+                for tag, value in model.named_parameters():
+                    tag = tag.replace('.', '/')
+                    logger.histo_summary(tag, value.data.cpu().numpy(), batch_idx + 1)
+                    logger.histo_summary(tag + '/grad', value.grad.data.cpu().numpy(), batch_idx + 1)
 
-                ## 3. Log training images (image summary)
-                #info = {'images': input_tensor.view(-1, 224, 224)[:10].cpu().numpy(), 'labels':target_tensor.view(-1, 224, 224)[:10].cpu().numpy()}
+                # 3. Log training images (image summary)
+                info = {'images': img_tensor.view(-1, 3, 224, 224)[:10].cpu().numpy(),
+                        'labels': sem_tensor.view(-1, 224, 224)[:10].cpu().numpy(),
+                        'predicts': sem_pred.view(-1, 224, 224)[:10].data.cpu().numpy()}
 
-                #for tag, images in info.items():
-                #    logger.image_summary(tag, images, batch_idx + 1)
+                for tag, images in info.items():
+                    logger.image_summary(tag, images, batch_idx + 1)
             
         dt = time.time() - t_start
         is_better = loss_f < prev_loss
@@ -104,22 +103,19 @@ def train():
 if __name__ == "__main__":
    logger = Logger('./logs')
    
-   #train_path = '/data/tuSimple/train_set/'
    train_path = args.train_path
-   test_path = '/data/tuSimple/test_set/'
-   #json_0313_path = '/data/tuSimple/train_set/label_data_0313.json'
-   #json_0531_path = '/data/tuSimple/train_set/label_data_0531.json'
-   #json_0601_path = '/data/tuSimple/train_set/label_data_0601.json'
-   
    train_dataset = tuSimpleDataset(train_path, size=SIZE)
-   test_dataset = tuSimpleDataset(test_path, size=SIZE)
-   
-   train_dataloader = DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=8)
+   train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=1)
 
    model = SegNet(input_ch=INPUT_CHANNELS, output_ch=OUTPUT_CHANNELS).cuda() 
    if os.path.isfile("model_best.pth"):
        model.load_state_dict(torch.load("model_best.pth"))
-   criterion = torch.nn.CrossEntropyLoss().cuda()
+
+   criterion_ce = torch.nn.CrossEntropyLoss().cuda()
+   criterion_disc = DiscriminativeLoss(delta_var=0.5,
+                                       delta_dist=1.5,
+                                       norm=2,
+                                       usegpu=True).cuda()
    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
    train()

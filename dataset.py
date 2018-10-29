@@ -8,7 +8,6 @@ import cv2
 import json
 import glob
 import os
-import random
 
 
 class tuSimpleDataset(data.Dataset):
@@ -28,6 +27,7 @@ class tuSimpleDataset(data.Dataset):
         self.lanes = [lane['lanes'] for lane in self.labels]
         self.y_samples = [y_sample['h_samples'] for y_sample in self.labels]
         self.raw_files = [raw_file['raw_file'] for raw_file in self.labels]
+
         self.img = np.zeros(size, np.uint8)
         self.label_img = np.zeros(size, np.uint8)
         self.ins_img = np.zeros((0,size[0],size[1]), np.uint8)
@@ -74,8 +74,7 @@ class tuSimpleDataset(data.Dataset):
    
     def get_lane_image(self, idx):
         lane_pts = [[(x,y) for (x,y) in zip(lane, self.y_samples[idx]) if x >= 0] for lane in self.lanes[idx]]
-        n_lane = len(lane_pts
-        while len(lane_pts) < n_seg:
+        while len(lane_pts) < self.n_seg:
             lane_pts.append(list())
         self.img = plt.imread(os.path.join(self.file_path, self.raw_files[idx]))
         self.height, self.width, _ = self.img.shape
@@ -83,7 +82,7 @@ class tuSimpleDataset(data.Dataset):
         self.ins_img = np.zeros((0, self.height, self.width), dtype=np.uint8)
         
         for i, lane_pt in enumerate(lane_pts):
-            cv2.polylines(self.label_img, np.int32([lane_pt]), isClosed=False, color=(255), thickness=10)   
+            cv2.polylines(self.label_img, np.int32([lane_pt]), isClosed=False, color=(255), thickness=10)
             gt = np.zeros((self.height, self.width), dtype=np.uint8)
             gt = cv2.polylines(gt, np.int32([lane_pt]), isClosed=False, color=(1), thickness=10)   
             self.ins_img = np.concatenate([self.ins_img, gt[np.newaxis]])

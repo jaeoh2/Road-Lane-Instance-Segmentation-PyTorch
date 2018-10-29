@@ -62,7 +62,7 @@ class DiscriminativeLoss(_Loss):
             # 1, n_clusters, n_loc,
             target_sample = target[i, :, :n_clusters[i]]
             # n_features, n_cluster
-            mean_sample = input_sample.sum(2) / target_sample.sum(2)
+            mean_sample = input_sample.sum(2) / (target_sample.sum(2) + 0.00001)
 
             # padding
             n_pad_clusters = max_n_clusters - n_clusters[i]
@@ -100,7 +100,7 @@ class DiscriminativeLoss(_Loss):
             target_sample = target[i, :n_clusters[i]]
 
             # n_clusters
-            c_var = var_sample.sum(1) / target_sample.sum(1)
+            c_var = var_sample.sum(1) / (target_sample.sum(1) + 0.00001)
             var_term += c_var.sum() / int(n_clusters[i])
         var_term /= bs
 

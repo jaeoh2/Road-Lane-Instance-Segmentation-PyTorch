@@ -85,16 +85,19 @@ def train():
                 # 3. Log training images (image summary)
                 info = {'images': img_tensor.view(-1, 3, 224, 224)[:10].cpu().numpy(),
                         'labels': sem_tensor.view(-1, 224, 224)[:10].cpu().numpy(),
-                        'predicts': sem_pred.view(-1, 224, 224)[:10].data.cpu().numpy()}
+                        'sem_preds': sem_pred.view(-1, 224, 224)[:10].data.cpu().numpy(),
+                        'ins_preds': ins_pred.view(-1, 224, 224)[:10].data.cpu().numpy()}
 
                 for tag, images in info.items():
                     logger.image_summary(tag, images, batch_idx + 1)
             
         dt = time.time() - t_start
         is_better = loss_f < prev_loss
+        scheduler.step(loss_f)
         
         if is_better:
             prev_loss = loss_f
+            print("\t\tBest Model.")
             torch.save(model.state_dict(), "model_best.pth")
             
         print("Epoch #{}\tLoss: {:.8f}\t Time: {:2f}s".format(epoch+1, loss_f, dt))
@@ -105,10 +108,11 @@ if __name__ == "__main__":
    
    train_path = args.train_path
    train_dataset = tuSimpleDataset(train_path, size=SIZE)
-   train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=1)
+   train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=16)
 
    model = SegNet(input_ch=INPUT_CHANNELS, output_ch=OUTPUT_CHANNELS).cuda() 
    if os.path.isfile("model_best.pth"):
+       print("Loaded model_best.pth")
        model.load_state_dict(torch.load("model_best.pth"))
 
    criterion_ce = torch.nn.CrossEntropyLoss().cuda()
@@ -117,5 +121,10 @@ if __name__ == "__main__":
                                        norm=2,
                                        usegpu=True).cuda()
    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+   scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer,
+                                                 mode='min',
+                                                 factor=0.1,
+                                                 patience=5,
+                                                 verbose=True)
 
    train()

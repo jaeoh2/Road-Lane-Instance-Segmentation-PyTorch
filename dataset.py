@@ -2,6 +2,7 @@ import torch
 from torch.utils import data
 from skimage.transform import AffineTransform, warp
 from skimage import img_as_float64, img_as_float32, img_as_ubyte
+import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
@@ -15,6 +16,8 @@ class tuSimpleDataset(data.Dataset):
     # https://github.com/vxy10/ImageAugmentation
     # https://github.com/TuSimple/tusimple-benchmark/blob/master/example/lane_demo.ipynb
     def __init__(self, file_path, size=[640, 360], gray=True, train=True, intensity=10):
+        warnings.simplefilter("ignore")
+
         self.width = size[0]
         self.height = size[1]
         self.n_seg = 5
@@ -44,9 +47,9 @@ class tuSimpleDataset(data.Dataset):
         trans_M = AffineTransform(scale=(.9, .9),
                                  translation=(-_get_delta(intensity), _get_delta(intensity)),
                                  shear=_get_delta(intensity))
-        self.img = img_as_float64(self.img)
-        self.label_img = img_as_float64(self.label_img)
-        self.ins_img = img_as_float64(self.ins_img)
+        self.img = img_as_float32(self.img)
+        self.label_img = img_as_float32(self.label_img)
+        self.ins_img = img_as_float32(self.ins_img)
 
         self.img = warp(self.img, trans_M)
         self.label_img = warp(self.label_img, trans_M)
@@ -84,7 +87,7 @@ class tuSimpleDataset(data.Dataset):
         for i, lane_pt in enumerate(lane_pts):
             cv2.polylines(self.label_img, np.int32([lane_pt]), isClosed=False, color=(255), thickness=10)
             gt = np.zeros((self.height, self.width), dtype=np.uint8)
-            gt = cv2.polylines(gt, np.int32([lane_pt]), isClosed=False, color=(1), thickness=10)   
+            gt = cv2.polylines(gt, np.int32([lane_pt]), isClosed=False, color=(255), thickness=10)   
             self.ins_img = np.concatenate([self.ins_img, gt[np.newaxis]])
 
     def __getitem__(self, idx):
@@ -96,10 +99,10 @@ class tuSimpleDataset(data.Dataset):
             self.random_transform()
             self.img = np.array(np.transpose(self.img, (2,0,1)), dtype=np.float32)
             self.label_img = img_as_float32(self.label_img)
-            self.ins_img = img_as_ubyte(self.ins_img)
+            self.ins_img = img_as_float32(self.ins_img)
             return torch.Tensor(self.img), torch.LongTensor(self.label_img), torch.Tensor(self.ins_img)
         else:
-            self.img = np.array(np.transpose(img_as_float64(self.img), (2,0,1)), dtype=np.float32)
+            self.img = np.array(np.transpose(img_as_float32(self.img), (2,0,1)), dtype=np.float32)
             return torch.Tensor(self.img)
     
     def __len__(self):

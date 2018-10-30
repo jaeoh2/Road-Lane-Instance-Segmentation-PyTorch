@@ -109,8 +109,8 @@ class SegNet(nn.Module):
         x = F.max_unpool2d(x, ind_1, kernel_size=2, stride=2)
         x = self.dec12(x)
 
-        sem = self.sem_out(x)
-        ins = self.ins_out(x) 
+        sem = F.softmax(self.sem_out(x), dim=1)
+        ins = F.softmax(self.ins_out(x), dim=1)
 
         return sem, ins 
 

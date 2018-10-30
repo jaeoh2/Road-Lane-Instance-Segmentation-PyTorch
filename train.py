@@ -56,7 +56,8 @@ def train():
             loss += disc_loss
 
             # CrossEntropy Loss
-            ce_loss = criterion_ce(sem_pred.permute(0,2,3,1).contiguous().view(-1,2),
+
+            ce_loss = criterion_ce(sem_pred.permute(0,2,3,1).contiguous().view(-1,OUTPUT_CHANNELS),
                                    sem_tensor.view(-1))
             loss += ce_loss
 
@@ -80,7 +81,7 @@ def train():
                 for tag, value in model.named_parameters():
                     tag = tag.replace('.', '/')
                     logger.histo_summary(tag, value.data.cpu().numpy(), batch_idx + 1)
-                    logger.histo_summary(tag + '/grad', value.grad.data.cpu().numpy(), batch_idx + 1)
+                    # logger.histo_summary(tag + '/grad', value.grad.data.cpu().numpy(), batch_idx + 1)
 
                 # 3. Log training images (image summary)
                 info = {'images': img_tensor.view(-1, 3, 224, 224)[:10].cpu().numpy(),

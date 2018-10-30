@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import torchvision.models as models
 
 class ConvBnRelu(nn.Module):
     def __init__(self, input_ch, output_ch, kernel_size=3, padding=1):
@@ -21,6 +21,9 @@ class SegNet(nn.Module):
     # refer from : https://github.com/delta-onera/segnet_pytorch/blob/master/segnet.py
     def __init__(self, input_ch, output_ch):
         super(SegNet, self).__init__()
+
+        self.vgg16 = models.vgg16(pretrained=True)
+
         #Encoder
         self.enc11 = ConvBnRelu(input_ch, 64)
         self.enc12 = ConvBnRelu(64, 64)
@@ -39,6 +42,8 @@ class SegNet(nn.Module):
         self.enc51 = ConvBnRelu(512, 512)
         self.enc52 = ConvBnRelu(512, 512)
         self.enc53 = ConvBnRelu(512, 512)
+
+        self.init_vgg_weigts()
 
         #Decodr
         self.dec53 = ConvBnRelu(512, 512)
@@ -109,8 +114,49 @@ class SegNet(nn.Module):
         x = F.max_unpool2d(x, ind_1, kernel_size=2, stride=2)
         x = self.dec12(x)
 
-        sem = F.softmax(self.sem_out(x), dim=1)
-        ins = F.softmax(self.ins_out(x), dim=1)
+        # sem = F.softmax(self.sem_out(x), dim=1)
+        # ins = F.softmax(self.ins_out(x), dim=1)
+        sem = self.sem_out(x)
+        ins = self.ins_out(x)
 
-        return sem, ins 
+        return sem, ins
 
+    def init_vgg_weigts(self):
+        self.enc11.conv[0].weight.data = self.vgg16.features[0].weight.data
+        self.enc11.conv[0].bias.data = self.vgg16.features[0].bias.data
+
+        self.enc12.conv[0].weight.data = self.vgg16.features[2].weight.data
+        self.enc12.conv[0].bias.data = self.vgg16.features[2].bias.data
+
+        self.enc21.conv[0].weight.data = self.vgg16.features[5].weight.data
+        self.enc21.conv[0].bias.data = self.vgg16.features[5].bias.data
+
+        self.enc22.conv[0].weight.data = self.vgg16.features[7].weight.data
+        self.enc22.conv[0].bias.data = self.vgg16.features[7].bias.data
+
+        self.enc31.conv[0].weight.data = self.vgg16.features[10].weight.data
+        self.enc31.conv[0].bias.data = self.vgg16.features[10].bias.data
+
+        self.enc32.conv[0].weight.data = self.vgg16.features[12].weight.data
+        self.enc32.conv[0].bias.data = self.vgg16.features[12].bias.data
+
+        self.enc33.conv[0].weight.data = self.vgg16.features[14].weight.data
+        self.enc33.conv[0].bias.data = self.vgg16.features[14].bias.data
+
+        self.enc41.conv[0].weight.data = self.vgg16.features[17].weight.data
+        self.enc41.conv[0].bias.data = self.vgg16.features[17].bias.data
+
+        self.enc42.conv[0].weight.data = self.vgg16.features[19].weight.data
+        self.enc42.conv[0].bias.data = self.vgg16.features[19].bias.data
+
+        self.enc43.conv[0].weight.data = self.vgg16.features[21].weight.data
+        self.enc43.conv[0].bias.data = self.vgg16.features[21].bias.data
+
+        self.enc51.conv[0].weight.data = self.vgg16.features[21].weight.data
+        self.enc51.conv[0].bias.data = self.vgg16.features[21].bias.data
+
+        self.enc52.conv[0].weight.data = self.vgg16.features[24].weight.data
+        self.enc52.conv[0].bias.data = self.vgg16.features[24].bias.data
+
+        self.enc53.conv[0].weight.data = self.vgg16.features[26].weight.data
+        self.enc53.conv[0].bias.data = self.vgg16.features[26].bias.data

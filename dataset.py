@@ -85,9 +85,9 @@ class tuSimpleDataset(data.Dataset):
         self.ins_img = np.zeros((0, self.height, self.width), dtype=np.uint8)
         
         for i, lane_pt in enumerate(lane_pts):
-            cv2.polylines(self.label_img, np.int32([lane_pt]), isClosed=False, color=(255), thickness=10)
+            cv2.polylines(self.label_img, np.int32([lane_pt]), isClosed=False, color=(255), thickness=12)
             gt = np.zeros((self.height, self.width), dtype=np.uint8)
-            gt = cv2.polylines(gt, np.int32([lane_pt]), isClosed=False, color=(255), thickness=10)
+            gt = cv2.polylines(gt, np.int32([lane_pt]), isClosed=False, color=(255), thickness=12)
             self.ins_img = np.concatenate([self.ins_img, gt[np.newaxis]])
 
     def __getitem__(self, idx):

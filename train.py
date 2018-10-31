@@ -86,7 +86,7 @@ def train():
                 # 3. Log training images (image summary)
                 info = {'images': img_tensor.view(-1, 3, 224, 224)[:10].cpu().numpy(),
                         'labels': sem_tensor.view(-1, 224, 224)[:10].cpu().numpy(),
-                        'sem_preds': sem_pred.view(-1, 224, 224)[:10].data.cpu().numpy(),
+                        'sem_preds': sem_pred.view(-1, 2, 224, 224)[:10,1].data.cpu().numpy(),
                         'ins_preds': ins_pred.view(-1, 224, 224)[:10].data.cpu().numpy()}
 
                 for tag, images in info.items():
@@ -101,7 +101,7 @@ def train():
             print("\t\tBest Model.")
             torch.save(model.state_dict(), "model_best.pth")
             
-        print("Epoch #{}\tLoss: {:.8f}\t Time: {:2f}s".format(epoch+1, loss_f, dt))
+        print("Epoch #{}\tLoss: {:.8f}\t Time: {:2f}s, Lr: {}".format(epoch+1, loss_f, dt, optimizer.param_groups[0]['lr']))
 
 
 if __name__ == "__main__":
@@ -117,8 +117,8 @@ if __name__ == "__main__":
        model.load_state_dict(torch.load("model_best.pth"))
 
    criterion_ce = torch.nn.CrossEntropyLoss().cuda()
-   criterion_disc = DiscriminativeLoss(delta_var=0.5,
-                                       delta_dist=1.5,
+   criterion_disc = DiscriminativeLoss(delta_var=0.1,
+                                       delta_dist=0.6,
                                        norm=2,
                                        usegpu=True).cuda()
    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)

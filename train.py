@@ -36,7 +36,7 @@ def train():
     
     for epoch in range(NUM_EPOCHS):
         t_start = time.time()
-        loss_f = 0
+        loss_f = []
 
         for batch_idx, (imgs, sem_labels, ins_labels) in enumerate(train_dataloader):
             loss = 0
@@ -64,7 +64,7 @@ def train():
             loss.backward()
             optimizer.step()
 
-            loss_f += loss.float()
+            loss_f.append(loss.cpu().data.numpy())
 
             if batch_idx % LOG_INTERVAL == 0:
                 print('\tTrain Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
@@ -93,15 +93,15 @@ def train():
                     logger.image_summary(tag, images, batch_idx + 1)
             
         dt = time.time() - t_start
-        is_better = loss_f < prev_loss
-        scheduler.step(loss_f)
+        is_better = np.mean(loss_f) < prev_loss
+        scheduler.step()
         
         if is_better:
-            prev_loss = loss_f
+            prev_loss = np.mean(loss_f)
             print("\t\tBest Model.")
             torch.save(model.state_dict(), "model_best.pth")
             
-        print("Epoch #{}\tLoss: {:.8f}\t Time: {:2f}s, Lr: {}".format(epoch+1, loss_f, dt, optimizer.param_groups[0]['lr']))
+        print("Epoch #{}\tLoss: {:.8f}\t Time: {:2f}s, Lr: {:2f}".format(epoch+1, np.mean(loss_f), dt, optimizer.param_groups[0]['lr']))
 
 
 if __name__ == "__main__":
@@ -122,10 +122,6 @@ if __name__ == "__main__":
                                        norm=2,
                                        usegpu=True).cuda()
    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
-   scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer,
-                                                 mode='min',
-                                                 factor=0.1,
-                                                 patience=5,
-                                                 verbose=True)
+   scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20,30,40,50,60,70,80], gamma=0.9)
 
    train()

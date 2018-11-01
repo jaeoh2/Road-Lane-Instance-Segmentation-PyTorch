@@ -85,9 +85,9 @@ class tuSimpleDataset(data.Dataset):
         self.ins_img = np.zeros((0, self.height, self.width), dtype=np.uint8)
         
         for i, lane_pt in enumerate(lane_pts):
-            cv2.polylines(self.label_img, np.int32([lane_pt]), isClosed=False, color=(255), thickness=12)
+            cv2.polylines(self.label_img, np.int32([lane_pt]), isClosed=False, color=(1), thickness=15)
             gt = np.zeros((self.height, self.width), dtype=np.uint8)
-            gt = cv2.polylines(gt, np.int32([lane_pt]), isClosed=False, color=(255), thickness=12)
+            gt = cv2.polylines(gt, np.int32([lane_pt]), isClosed=False, color=(1), thickness=7)
             self.ins_img = np.concatenate([self.ins_img, gt[np.newaxis]])
 
     def __getitem__(self, idx):
@@ -96,10 +96,10 @@ class tuSimpleDataset(data.Dataset):
         self.preprocess()
 
         if self.flags['train']:
-            self.random_transform()
+            #self.random_transform()
             self.img = np.array(np.transpose(self.img, (2,0,1)), dtype=np.float32)
-            self.label_img = img_as_float32(self.label_img)
-            self.ins_img = img_as_float32(self.ins_img)
+            self.label_img = np.array(self.label_img, dtype=np.float32)
+            self.ins_img = np.array(self.ins_img, dtype=np.float32)
             return torch.Tensor(self.img), torch.LongTensor(self.label_img), torch.Tensor(self.ins_img)
         else:
             self.img = np.array(np.transpose(img_as_float32(self.img), (2,0,1)), dtype=np.float32)

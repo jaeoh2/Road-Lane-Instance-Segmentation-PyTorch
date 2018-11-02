@@ -4,7 +4,7 @@ import time
 import os
 import argparse
 
-from model import SegNet
+from segnet import SegNet
 from loss import DiscriminativeLoss
 from dataset import tuSimpleDataset
 from logger import Logger

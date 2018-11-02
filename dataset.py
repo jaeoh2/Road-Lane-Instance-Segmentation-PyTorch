@@ -102,7 +102,7 @@ class tuSimpleDataset(data.Dataset):
             self.ins_img = np.array(self.ins_img, dtype=np.float32)
             return torch.Tensor(self.img), torch.LongTensor(self.label_img), torch.Tensor(self.ins_img)
         else:
-            self.img = np.array(np.transpose(img_as_float32(self.img), (2,0,1)), dtype=np.float32)
+            self.img = np.array(np.transpose(self.img, (2,0,1)), dtype=np.float32)
             return torch.Tensor(self.img)
     
     def __len__(self):

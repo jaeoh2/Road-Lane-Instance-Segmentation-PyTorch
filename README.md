@@ -1,6 +1,7 @@
 # Road-Lane-Instance-Segmentation-PyTorch
 Road lane instance segmentation with PyTorch, SegNet and discriminative loss.  
 Trained from tuSimple dataset.
+![png](output_0.png)
 
 ### Dataset
 Downloads: [tuSimple dataset](https://github.com/TuSimple/tusimple-benchmark/wiki)
@@ -10,9 +11,6 @@ train_path = '/data/tuSimple/train_set/'
 train_dataset = tuSimpleDataset(train_path, size=SIZE)
 train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=16)
 ```
-
-### Result
-![png](output_0.png)
 
 ### Model
 #### SegNet with Discriminative Loss using pre-trained vgg16 encoder

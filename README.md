@@ -4,11 +4,11 @@ Road lane instance segmentation with PyTorch.
   - Lane clustered with DBSCAN.  
   - Trained from tuSimple dataset.
 
-##### SegNet result
-![alt text](output_0.png "SegNet Result")
-
 ##### ENet result
 ![alt text](output_1.png "ENet Result")
+
+##### SegNet result
+![alt text](output_0.png "SegNet Result")
 
 ### Dataset
 Downloads: [tuSimple dataset](https://github.com/TuSimple/tusimple-benchmark/wiki)

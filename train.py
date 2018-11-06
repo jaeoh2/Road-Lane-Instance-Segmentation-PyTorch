@@ -5,6 +5,7 @@ import os
 import argparse
 
 from segnet import SegNet
+from enet import ENet
 from loss import DiscriminativeLoss
 from dataset import tuSimpleDataset
 from logger import Logger
@@ -72,7 +73,7 @@ def train():
                     100. * batch_idx / len(train_dataloader), loss.item()))
 
                 #Tensorboard
-                info = {'loss': loss.item()}
+                info = {'loss': loss.item(), 'ce_loss': ce_loss.item(), 'disc_loss': disc_loss.item(), 'epoch': epoch}
 
                 for tag, value in info.items():
                     logger.scalar_summary(tag, value, batch_idx + 1)
@@ -84,10 +85,10 @@ def train():
                     # logger.histo_summary(tag + '/grad', value.grad.data.cpu().numpy(), batch_idx + 1)
 
                 # 3. Log training images (image summary)
-                info = {'images': img_tensor.view(-1, 3, 224, 224)[:10].cpu().numpy(),
-                        'labels': sem_tensor.view(-1, 224, 224)[:10].cpu().numpy(),
-                        'sem_preds': sem_pred.view(-1, 2, 224, 224)[:10,1].data.cpu().numpy(),
-                        'ins_preds': ins_pred.view(-1, 224, 224)[:10].data.cpu().numpy()}
+                info = {'images': img_tensor.view(-1, 3, SIZE[0], SIZE[1])[:BATCH_SIZE].cpu().numpy(),
+                        'labels': sem_tensor.view(-1, SIZE[0], SIZE[1])[:BATCH_SIZE].cpu().numpy(),
+                        'sem_preds': sem_pred.view(-1, 2, SIZE[0], SIZE[1])[:BATCH_SIZE,1].data.cpu().numpy(),
+                        'ins_preds': ins_pred.view(-1, SIZE[0], SIZE[1])[:BATCH_SIZE*5].data.cpu().numpy()}
 
                 for tag, images in info.items():
                     logger.image_summary(tag, images, batch_idx + 1)
@@ -111,7 +112,8 @@ if __name__ == "__main__":
    train_dataset = tuSimpleDataset(train_path, size=SIZE)
    train_dataloader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=16)
 
-   model = SegNet(input_ch=INPUT_CHANNELS, output_ch=OUTPUT_CHANNELS).cuda() 
+   #model = SegNet(input_ch=INPUT_CHANNELS, output_ch=OUTPUT_CHANNELS).cuda() 
+   model = ENet(input_ch=INPUT_CHANNELS, output_ch=OUTPUT_CHANNELS).cuda() 
    if os.path.isfile("model_best.pth"):
        print("Loaded model_best.pth")
        model.load_state_dict(torch.load("model_best.pth"))

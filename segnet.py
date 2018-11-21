@@ -7,7 +7,7 @@ class ConvBnRelu(nn.Module):
     def __init__(self, input_ch, output_ch, kernel_size=3, padding=1):
         super(ConvBnRelu, self).__init__()
         self.conv =  nn.Sequential(
-            nn.Conv2d(input_ch, output_ch, kernel_size=kernel_size, padding=padding),
+            nn.Conv2d(input_ch, output_ch, kernel_size=kernel_size, padding=padding, bias=False),
             nn.BatchNorm2d(output_ch),
             nn.ReLU(),
         )
@@ -24,7 +24,7 @@ class SegNet(nn.Module):
 
         self.vgg16 = models.vgg16(pretrained=True)
 
-        #Encoder
+        # Shared Encoder
         self.enc11 = ConvBnRelu(input_ch, 64)
         self.enc12 = ConvBnRelu(64, 64)
 
@@ -45,29 +45,47 @@ class SegNet(nn.Module):
 
         self.init_vgg_weigts()
 
-        #Decodr
-        self.dec53 = ConvBnRelu(512, 512)
-        self.dec52 = ConvBnRelu(512, 512)
-        self.dec51 = ConvBnRelu(512, 512)
+        # Binary Segmentation Decoder
+        self.sem_dec53 = ConvBnRelu(512, 512)
+        self.sem_dec52 = ConvBnRelu(512, 512)
+        self.sem_dec51 = ConvBnRelu(512, 512)
 
-        self.dec43 = ConvBnRelu(512, 512)
-        self.dec42 = ConvBnRelu(512, 512)
-        self.dec41 = ConvBnRelu(512, 256)
+        self.sem_dec43 = ConvBnRelu(512, 512)
+        self.sem_dec42 = ConvBnRelu(512, 512)
+        self.sem_dec41 = ConvBnRelu(512, 256)
 
-        self.dec33 = ConvBnRelu(256, 256)
-        self.dec32 = ConvBnRelu(256, 256)
-        self.dec31 = ConvBnRelu(256, 128)
+        self.sem_dec33 = ConvBnRelu(256, 256)
+        self.sem_dec32 = ConvBnRelu(256, 256)
+        self.sem_dec31 = ConvBnRelu(256, 128)
 
-        self.dec22 = ConvBnRelu(128, 128)
-        self.dec21 = ConvBnRelu(128, 64)
+        self.sem_dec22 = ConvBnRelu(128, 128)
+        self.sem_dec21 = ConvBnRelu(128, 64)
 
-        self.dec12 = ConvBnRelu(64, 64)
+        self.sem_dec12 = ConvBnRelu(64, 64)
+
+        # Instance Segmentation Decoder
+        self.ins_dec53 = ConvBnRelu(512, 512)
+        self.ins_dec52 = ConvBnRelu(512, 512)
+        self.ins_dec51 = ConvBnRelu(512, 512)
+
+        self.ins_dec43 = ConvBnRelu(512, 512)
+        self.ins_dec42 = ConvBnRelu(512, 512)
+        self.ins_dec41 = ConvBnRelu(512, 256)
+
+        self.ins_dec33 = ConvBnRelu(256, 256)
+        self.ins_dec32 = ConvBnRelu(256, 256)
+        self.ins_dec31 = ConvBnRelu(256, 128)
+
+        self.ins_dec22 = ConvBnRelu(128, 128)
+        self.ins_dec21 = ConvBnRelu(128, 64)
+
+        self.ins_dec12 = ConvBnRelu(64, 64)
 
         self.sem_out = nn.Conv2d(64, output_ch, kernel_size=3, stride=1, padding=1)
         self.ins_out = nn.Conv2d(64, 5, kernel_size=3, stride=1, padding=1)
                 
     def forward(self, x):
-        #Encoder
+        # Shared Encoder
         x = self.enc11(x)
         x = self.enc12(x)
         x, ind_1 = F.max_pool2d(x, kernel_size=2, stride=2, return_indices=True)
@@ -91,70 +109,80 @@ class SegNet(nn.Module):
         x = self.enc53(x)
         x, ind_5 = F.max_pool2d(x, kernel_size=2, stride=2, return_indices=True)
 
-        #Decoder
-        x = F.max_unpool2d(x, ind_5, kernel_size=2, stride=2)
-        x = self.dec53(x)
-        x = self.dec52(x)
-        x = self.dec51(x)
+        # Binary Segmentation Decoder
+        x1 = F.max_unpool2d(x, ind_5, kernel_size=2, stride=2)
+        x1 = self.sem_dec53(x1)
+        x1 = self.sem_dec52(x1)
+        x1 = self.sem_dec51(x1)
 
-        x = F.max_unpool2d(x, ind_4, kernel_size=2, stride=2)
-        x = self.dec43(x)
-        x = self.dec42(x)
-        x = self.dec41(x)
+        x1 = F.max_unpool2d(x1, ind_4, kernel_size=2, stride=2)
+        x1 = self.sem_dec43(x1)
+        x1 = self.sem_dec42(x1)
+        x1 = self.sem_dec41(x1)
 
-        x = F.max_unpool2d(x, ind_3, kernel_size=2, stride=2)
-        x = self.dec33(x)
-        x = self.dec32(x)
-        x = self.dec31(x)
+        x1 = F.max_unpool2d(x1, ind_3, kernel_size=2, stride=2)
+        x1 = self.sem_dec33(x1)
+        x1 = self.sem_dec32(x1)
+        x1 = self.sem_dec31(x1)
 
-        x = F.max_unpool2d(x, ind_2, kernel_size=2, stride=2)
-        x = self.dec22(x)
-        x = self.dec21(x)
+        x1 = F.max_unpool2d(x1, ind_2, kernel_size=2, stride=2)
+        x1 = self.sem_dec22(x1)
+        x1 = self.sem_dec21(x1)
 
-        x = F.max_unpool2d(x, ind_1, kernel_size=2, stride=2)
-        x = self.dec12(x)
+        x1 = F.max_unpool2d(x1, ind_1, kernel_size=2, stride=2)
+        x1 = self.sem_dec12(x1)
 
-        sem = self.sem_out(x)
-        ins = self.ins_out(x)
+        # Instance Segmentation Decoder
+        x2 = F.max_unpool2d(x, ind_5, kernel_size=2, stride=2)
+        x2 = self.ins_dec53(x2)
+        x2 = self.ins_dec52(x2)
+        x2 = self.ins_dec51(x2)
+
+        x2 = F.max_unpool2d(x2, ind_4, kernel_size=2, stride=2)
+        x2 = self.ins_dec43(x2)
+        x2 = self.ins_dec42(x2)
+        x2 = self.ins_dec41(x2)
+
+        x2 = F.max_unpool2d(x2, ind_3, kernel_size=2, stride=2)
+        x2 = self.ins_dec33(x2)
+        x2 = self.ins_dec32(x2)
+        x2 = self.ins_dec31(x2)
+
+        x2 = F.max_unpool2d(x2, ind_2, kernel_size=2, stride=2)
+        x2 = self.ins_dec22(x2)
+        x2 = self.ins_dec21(x2)
+
+        x2 = F.max_unpool2d(x2, ind_1, kernel_size=2, stride=2)
+        x2 = self.ins_dec12(x2)
+
+        sem = self.sem_out(x1)
+        ins = self.ins_out(x2)
 
         return sem, ins
 
     def init_vgg_weigts(self):
         self.enc11.conv[0].weight.data = self.vgg16.features[0].weight.data
-        self.enc11.conv[0].bias.data = self.vgg16.features[0].bias.data
 
         self.enc12.conv[0].weight.data = self.vgg16.features[2].weight.data
-        self.enc12.conv[0].bias.data = self.vgg16.features[2].bias.data
 
         self.enc21.conv[0].weight.data = self.vgg16.features[5].weight.data
-        self.enc21.conv[0].bias.data = self.vgg16.features[5].bias.data
 
         self.enc22.conv[0].weight.data = self.vgg16.features[7].weight.data
-        self.enc22.conv[0].bias.data = self.vgg16.features[7].bias.data
 
         self.enc31.conv[0].weight.data = self.vgg16.features[10].weight.data
-        self.enc31.conv[0].bias.data = self.vgg16.features[10].bias.data
 
         self.enc32.conv[0].weight.data = self.vgg16.features[12].weight.data
-        self.enc32.conv[0].bias.data = self.vgg16.features[12].bias.data
 
         self.enc33.conv[0].weight.data = self.vgg16.features[14].weight.data
-        self.enc33.conv[0].bias.data = self.vgg16.features[14].bias.data
 
         self.enc41.conv[0].weight.data = self.vgg16.features[17].weight.data
-        self.enc41.conv[0].bias.data = self.vgg16.features[17].bias.data
 
         self.enc42.conv[0].weight.data = self.vgg16.features[19].weight.data
-        self.enc42.conv[0].bias.data = self.vgg16.features[19].bias.data
 
         self.enc43.conv[0].weight.data = self.vgg16.features[21].weight.data
-        self.enc43.conv[0].bias.data = self.vgg16.features[21].bias.data
 
         self.enc51.conv[0].weight.data = self.vgg16.features[21].weight.data
-        self.enc51.conv[0].bias.data = self.vgg16.features[21].bias.data
 
         self.enc52.conv[0].weight.data = self.vgg16.features[24].weight.data
-        self.enc52.conv[0].bias.data = self.vgg16.features[24].bias.data
 
         self.enc53.conv[0].weight.data = self.vgg16.features[26].weight.data
-        self.enc53.conv[0].bias.data = self.vgg16.features[26].bias.data

@@ -5,16 +5,23 @@ Road lane instance segmentation with PyTorch.
   - Trained from tuSimple dataset.
   - ROS(Robot Operating System) inference node (20Hz).
 
-### ROS
-```bash
-python2 ros_lane_detect.py --model-path model_best_enet.pth
-```
-
 ### ENet result
 ![alt text](output_1.png "ENet Result")
 
 ### SegNet result
 ![alt text](output_0.png "SegNet Result")
+
+### ROS
+```bash
+$ python2 ros_lane_detect.py --model-path model_best_enet.pth
+```
+
+### Train
+```bash
+$ mkdir logs
+$ tensorboard --logdir=logs/ &
+$ python3 train.py --train-path /tuSimple/train_set/ --epoch 100 --batch-size 16 --lr 0.0001 --img-size 224 224
+```
 
 ### Dataset
 Downloads: [tuSimple dataset](https://github.com/TuSimple/tusimple-benchmark/wiki)

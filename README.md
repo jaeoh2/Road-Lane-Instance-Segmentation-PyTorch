@@ -3,6 +3,12 @@ Road lane instance segmentation with PyTorch.
   - SegNet, ENet with discriminative loss.
   - Lane clustered with DBSCAN.  
   - Trained from tuSimple dataset.
+  - ROS(Robot Operating System) inference node (20Hz).
+
+### ROS
+```bash
+python2 ros_lane_detect.py --model-path model_best_enet.pth
+```
 
 ### ENet result
 ![alt text](output_1.png "ENet Result")

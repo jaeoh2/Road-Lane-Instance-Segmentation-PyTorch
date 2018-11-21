@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 import threading
 import argparse
+import matplotlib.pyplot as plt
 
 import torch
 from enet import ENet
@@ -23,7 +24,7 @@ def coloring(mask, gray=False):
     colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, n_ins)]
     for i in range(n_ins):
         if gray:
-            ins_color_img[mask == i + 1] = (np.array([255,255,255]).astype(np.uint8)
+            ins_color_img[mask == i + 1] = np.array([255,255,255]).astype(np.uint8)
         else:
             ins_color_img[mask == i + 1] = (np.array(colors[i][:3]) * 255).astype(np.uint8)
             

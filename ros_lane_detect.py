@@ -64,7 +64,7 @@ class LaneDetectNode(object):
         self.pub = rospy.Publisher('/lane_image', Image, queue_size=1)
 
         rospy.Timer(rospy.Duration(0.05), self.get_instances)
-        rospy.loginfo("road rain detection started")
+        rospy.loginfo("road lane detection started")
 
     def preprocess(self, img):
         self.img = self.cvbridge.imgmsg_to_cv2(img, 'rgb8')
